@@ -25,7 +25,7 @@ def run_scan(area, hashset):
     return matches
 
 
-st.title("📞 MD5 Hash Checker for One Area Code (Opt-In Data Only)")
+st.title("Alan Program")
 
 uploaded = st.file_uploader("Upload file of MD5 hashes (one per line)", type=["txt"])
 area = st.text_input("Area Code (3 digits)", max_chars=3)
