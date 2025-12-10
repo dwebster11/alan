@@ -1,5 +1,6 @@
 import streamlit as st
 import hashlib
+import pandas as pd
 import tempfile
 
 def md5_hex(s: str) -> str:
@@ -9,7 +10,7 @@ def run_scan(area, hashset):
     matches = []
     total = 10_000_000
 
-    progress = st.progress(0, text="Starting…")
+    progress = st.progress(0, text="Starting scan…")
     for i in range(total):
         subscriber = f"{i:07d}"
         full_number = f"{area}{subscriber}"
@@ -25,31 +26,47 @@ def run_scan(area, hashset):
     return matches
 
 
-st.title("Alan Program")
+st.title("📞 MD5 Hash Checker (One Area Code | CSV Input | Opt-In Data Only)")
 
-uploaded = st.file_uploader("Upload file of MD5 hashes (one per line)", type=["txt"])
+uploaded = st.file_uploader("Upload CSV File Containing MD5 Hashes", type=["csv"])
+
+if uploaded is not None:
+    # Load CSV
+    df = pd.read_csv(uploaded)
+
+    st.write(f"CSV loaded: **{df.shape[0]:,} rows**, **{df.shape[1]:,} columns**")
+
+    # Let user pick which column contains the hashes
+    column = st.selectbox("Select the column that contains MD5 hashes", df.columns)
+
+    # Prepare hashset
+    hashset = {
+        str(v).strip().lower()
+        for v in df[column].dropna().unique()
+        if str(v).strip()
+    }
+
+    st.write(f"Using **{len(hashset):,} unique hashes** from column: `{column}`")
+
 area = st.text_input("Area Code (3 digits)", max_chars=3)
 
 if st.button("Run Comparison"):
-    if not uploaded:
-        st.error("Please upload a hash file.")
+    if uploaded is None:
+        st.error("Please upload a CSV file first.")
         st.stop()
 
     if not area.isdigit() or len(area) != 3:
         st.error("Area code must be exactly 3 digits.")
         st.stop()
 
-    # Load hashes
-    st.write("Loading hashes…")
-    hashset = {line.strip().lower() for line in uploaded.read().decode().splitlines() if line.strip()}
+    st.write(f"Starting comparison for area code **{area}**…")
 
-    st.write(f"Loaded **{len(hashset):,}** hashes. Beginning scan…")
-
+    # Run scan
     matches = run_scan(area, hashset)
 
     st.success(f"Done! Found **{len(matches):,}** matches.")
 
-    # Save to temp file for download
+    # Download file
     if matches:
         with tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8") as f:
             for num, h in matches:
@@ -58,8 +75,8 @@ if st.button("Run Comparison"):
 
         with open(temp_path, "rb") as f:
             st.download_button(
-                label="Download Matches",
+                label="Download Matching Phone Numbers",
                 data=f,
                 file_name="matches.txt",
-                mime="text/plain"
+                mime="text/plain",
             )
