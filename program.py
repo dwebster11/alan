@@ -60,7 +60,7 @@ def run_scan(area, hashset):
 # ------------------------------
 # Streamlit UI
 # ------------------------------
-st.title("Alan Project)")
+st.title("Alan Project")
 
 uploaded = st.file_uploader("Upload CSV", type=["csv"])
 
